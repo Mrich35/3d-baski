@@ -343,6 +343,7 @@ async function driveKaydet() {
     const veri = { siparisler, stoklar, musteriler, sayac, guncelleme: new Date().toISOString() };
     await fetch(API_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify(veri),
       headers: { 'Content-Type': 'text/plain' }
     });
@@ -353,17 +354,17 @@ async function driveKaydet() {
   }
 }
 
-async function driveYukle() {
+function driveYukle() {
   senkronDurumGoster('yukleniyor');
-  try {
-    const res = await fetch(API_URL);
-    const veri = await res.json();
+  // JSONP yöntemi - CORS sorununu aşar
+  const eskiScript = document.getElementById('jsonp-script');
+  if (eskiScript) eskiScript.remove();
+  window.jsonpGeriCagir = function(veri) {
     if (veri && veri.siparisler) {
       siparisler = veri.siparisler;
       stoklar = veri.stoklar || [];
       musteriler = veri.musteriler || [];
       sayac = veri.sayac || 1;
-      // Yerel de güncelle
       localStorage.setItem('siparisler', JSON.stringify(siparisler));
       localStorage.setItem('stoklar', JSON.stringify(stoklar));
       localStorage.setItem('musteriler', JSON.stringify(musteriler));
@@ -376,9 +377,12 @@ async function driveYukle() {
     } else {
       senkronDurumGoster('kaydedildi');
     }
-  } catch (err) {
-    senkronDurumGoster('hata');
-  }
+  };
+  const script = document.createElement('script');
+  script.id = 'jsonp-script';
+  script.src = API_URL + '?callback=jsonpGeriCagir';
+  script.onerror = () => senkronDurumGoster('hata');
+  document.head.appendChild(script);
 }
 
 function kaydetVeSenkronEt(anahtar, veri) {
